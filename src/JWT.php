@@ -43,9 +43,9 @@ class JWT
     /**
      * Allow the current timestamp to be specified.
      * Useful for fixing a value within unit testing.
-     * Will default to PHP time() value if null.
+     * Will default to PHP microtime() value if null.
      *
-     * @var ?int
+     * @var int|float|null
      */
     public static $timestamp = null;
 
@@ -93,7 +93,8 @@ class JWT
         $keyOrKeyArray
     ): stdClass {
         // Validate JWT
-        $timestamp = \is_null(static::$timestamp) ? \time() : static::$timestamp;
+        /** @var int|float */
+        $timestamp = \is_null(static::$timestamp) ? \microtime(true) : static::$timestamp;
 
         if (empty($keyOrKeyArray)) {
             throw new InvalidArgumentException('Key may not be empty');
@@ -145,7 +146,7 @@ class JWT
         // token can actually be used. If it's not yet that time, abort.
         if (isset($payload->nbf) && $payload->nbf > ($timestamp + static::$leeway)) {
             throw new BeforeValidException(
-                'Cannot handle token prior to ' . \date(DateTime::ISO8601, $payload->nbf)
+                'Cannot handle token prior to ' . \date(DateTime::ISO8601, (int) $payload->nbf)
             );
         }
 
@@ -154,7 +155,7 @@ class JWT
         // correctly used the nbf claim).
         if (isset($payload->iat) && $payload->iat > ($timestamp + static::$leeway)) {
             throw new BeforeValidException(
-                'Cannot handle token prior to ' . \date(DateTime::ISO8601, $payload->iat)
+                'Cannot handle token prior to ' . \date(DateTime::ISO8601, (int) $payload->iat)
             );
         }
 

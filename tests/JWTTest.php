@@ -76,6 +76,35 @@ class JWTTest extends TestCase
         $this->assertSame($decoded->message, 'abc');
     }
 
+    public function testValidTokenOnlyNbfMicrotime()
+    {
+        JWT::$timestamp = 0.9 + time();
+        $payload = [
+            'message' => 'abc',
+            'exp' => microtime(true) + 20, // time in the future
+            'nbf' => 0.6 + time(),
+        ];
+        $encoded = JWT::encode($payload, 'my_key', 'HS256');
+        $decoded = JWT::decode($encoded, new Key('my_key', 'HS256'));
+        $this->assertSame($decoded->message, 'abc');
+        JWT::$timestamp = null;
+    }
+
+    public function testInvalidTokenOnlyNbfMicrotime()
+    {
+        $this->expectException(BeforeValidException::class);
+        JWT::$timestamp = 0.6 + time();
+        $payload = [
+            'message' => 'abc',
+            'exp' => microtime(true) + 20, // time in the future
+            'nbf' => 0.9 + time(),
+        ];
+        $encoded = JWT::encode($payload, 'my_key', 'HS256');
+        $decoded = JWT::decode($encoded, new Key('my_key', 'HS256'));
+        $this->assertSame($decoded->message, 'abc');
+        JWT::$timestamp = null;
+    }
+
     public function testValidTokenWithLeeway()
     {
         JWT::$leeway = 60;
